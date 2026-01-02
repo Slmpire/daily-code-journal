@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Daily Code Journal</title>
-   <link rel="icon" type="image/png" href="logo.png">
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -21,27 +20,39 @@
     const Zap = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>;
     const LogOut = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>;
     const User = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>;
+    const Printer = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>;
+    const Award = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>;
+    const Bell = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>;
+    const List = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>;
+    const CheckCircle = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>;
+    const XCircle = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>;
 
     function DailyCodeJournal() {
       const [userEmail, setUserEmail] = useState('');
       const [isLoggedIn, setIsLoggedIn] = useState(false);
       const [userProfile, setUserProfile] = useState({ name: '', nickname: '' });
       const [showProfileSetup, setShowProfileSetup] = useState(false);
+      const [view, setView] = useState('today'); // 'today' or 'history'
       
       const [entries, setEntries] = useState({});
+      const [streakHistory, setStreakHistory] = useState([]);
       const [currentEntry, setCurrentEntry] = useState({
         worked: '',
         learned: '',
         challenges: '',
         goals: '',
-        mood: '😊'
+        mood: '😊',
+        tasksCompleted: false
       });
       const [selectedDate, setSelectedDate] = useState('');
+      const [notificationTime, setNotificationTime] = useState('18:00');
+      const [notificationsEnabled, setNotificationsEnabled] = useState(false);
 
       const moods = ['😊', '🤔', '😤', '🔥', '😴', '🎉', '😅', '💪'];
 
       useEffect(() => {
         checkAuth();
+        requestNotificationPermission();
       }, []);
 
       useEffect(() => {
@@ -60,13 +71,50 @@
             learned: '',
             challenges: '',
             goals: '',
-            mood: '😊'
+            mood: '😊',
+            tasksCompleted: false
           });
         }
       }, [selectedDate, entries]);
 
+      useEffect(() => {
+        if (notificationsEnabled) {
+          scheduleNotification();
+        }
+      }, [notificationTime, notificationsEnabled]);
+
       const getTodayDate = () => {
         return new Date().toISOString().split('T')[0];
+      };
+
+      const requestNotificationPermission = async () => {
+        if ('Notification' in window && Notification.permission === 'default') {
+          await Notification.requestPermission();
+        }
+      };
+
+      const scheduleNotification = () => {
+        const [hours, minutes] = notificationTime.split(':');
+        const now = new Date();
+        const scheduledTime = new Date();
+        scheduledTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+        if (scheduledTime <= now) {
+          scheduledTime.setDate(scheduledTime.getDate() + 1);
+        }
+
+        const timeUntilNotification = scheduledTime - now;
+
+        setTimeout(() => {
+          if (Notification.permission === 'granted') {
+            new Notification('📔 Daily Code Journal Reminder', {
+              body: "Time to log your coding day! Don't break the streak!",
+              icon: '📔',
+              badge: '🔥'
+            });
+          }
+          scheduleNotification(); // Reschedule for next day
+        }, timeUntilNotification);
       };
 
       const checkAuth = () => {
@@ -112,6 +160,7 @@
         setUserEmail('');
         setUserProfile({ name: '', nickname: '' });
         setEntries({});
+        setStreakHistory([]);
       };
 
       const loadUserData = () => {
@@ -123,6 +172,21 @@
         const entriesData = localStorage.getItem(`journal-entries-${userEmail}`);
         if (entriesData) {
           setEntries(JSON.parse(entriesData));
+        }
+
+        const streakData = localStorage.getItem(`streak-history-${userEmail}`);
+        if (streakData) {
+          setStreakHistory(JSON.parse(streakData));
+        }
+
+        const notifTime = localStorage.getItem(`notification-time-${userEmail}`);
+        if (notifTime) {
+          setNotificationTime(notifTime);
+        }
+
+        const notifEnabled = localStorage.getItem(`notifications-enabled-${userEmail}`);
+        if (notifEnabled === 'true') {
+          setNotificationsEnabled(true);
         }
       };
 
@@ -136,7 +200,67 @@
 
         localStorage.setItem(`journal-entries-${userEmail}`, JSON.stringify(updated));
         setEntries(updated);
-        alert('✅ Entry saved! Now export and push to GitHub.');
+        
+        // Update streak
+        updateStreak(updated);
+        
+        alert('✅ Entry saved!');
+      };
+
+      const updateStreak = (updatedEntries) => {
+        const dates = Object.keys(updatedEntries).sort();
+        const streaks = [];
+        let currentStreak = { start: null, end: null, count: 0 };
+
+        dates.forEach((date, index) => {
+          if (index === 0) {
+            currentStreak = { start: date, end: date, count: 1 };
+          } else {
+            const prevDate = new Date(dates[index - 1]);
+            const currDate = new Date(date);
+            const diffDays = Math.floor((currDate - prevDate) / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 1) {
+              // Continue streak
+              currentStreak.end = date;
+              currentStreak.count++;
+            } else {
+              // Streak broken, save current and start new
+              streaks.push({ ...currentStreak });
+              currentStreak = { start: date, end: date, count: 1 };
+            }
+          }
+        });
+
+        // Save the last streak
+        if (currentStreak.start) {
+          streaks.push(currentStreak);
+        }
+
+        setStreakHistory(streaks);
+        localStorage.setItem(`streak-history-${userEmail}`, JSON.stringify(streaks));
+      };
+
+      const getCurrentStreak = () => {
+        if (streakHistory.length === 0) return 0;
+        const lastStreak = streakHistory[streakHistory.length - 1];
+        const today = getTodayDate();
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+        // Check if last streak is current
+        if (lastStreak.end === today || lastStreak.end === yesterdayStr) {
+          return lastStreak.count;
+        }
+        return 0;
+      };
+
+      const getCompletionScore = () => {
+        const entriesArray = Object.values(entries);
+        if (entriesArray.length === 0) return 0;
+        const completed = entriesArray.filter(e => e.tasksCompleted).length;
+        return Math.round((completed / entriesArray.length) * 100);
       };
 
       const exportToMarkdown = () => {
@@ -156,6 +280,7 @@
         const markdown = `# ${formatted}
 
 **Author:** ${userProfile.name} (@${userProfile.nickname})
+**Tasks Completed:** ${entry.tasksCompleted ? '✅ Yes' : '❌ No'}
 
 ## What I worked on
 ${entry.worked || 'Nothing recorded'}
@@ -181,23 +306,225 @@ ${entry.goals || 'Not set'}
         URL.revokeObjectURL(url);
       };
 
-      const getStreak = () => {
-        const dates = Object.keys(entries).sort().reverse();
-        let streak = 0;
-        let currentDate = new Date();
-
-        for (let i = 0; i < dates.length; i++) {
-          const entryDate = new Date(dates[i]);
-          const diffDays = Math.floor((currentDate - entryDate) / (1000 * 60 * 60 * 24));
-
-          if (diffDays === i) {
-            streak++;
-          } else {
-            break;
-          }
+      const printEntry = () => {
+        if (!selectedDate || !entries[selectedDate]) {
+          alert('No entry for this date');
+          return;
         }
 
-        return streak;
+        const entry = entries[selectedDate];
+        const date = new Date(selectedDate);
+        const formatted = date.toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        });
+
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Journal Entry - ${formatted}</title>
+            <style>
+              body {
+                font-family: 'Georgia', serif;
+                max-width: 800px;
+                margin: 40px auto;
+                padding: 20px;
+                line-height: 1.6;
+                color: #333;
+              }
+              h1 {
+                color: #2c3e50;
+                border-bottom: 3px solid #3498db;
+                padding-bottom: 10px;
+              }
+              h2 {
+                color: #34495e;
+                margin-top: 30px;
+                margin-bottom: 10px;
+              }
+              .author {
+                color: #7f8c8d;
+                font-style: italic;
+                margin-bottom: 30px;
+              }
+              .status {
+                display: inline-block;
+                padding: 5px 15px;
+                border-radius: 20px;
+                font-weight: bold;
+                margin-bottom: 20px;
+              }
+              .completed { background: #d4edda; color: #155724; }
+              .incomplete { background: #f8d7da; color: #721c24; }
+              .content {
+                background: #f8f9fa;
+                padding: 15px;
+                border-radius: 5px;
+                margin-bottom: 20px;
+                white-space: pre-wrap;
+              }
+              .mood {
+                font-size: 2em;
+                text-align: center;
+                margin: 20px 0;
+              }
+              @media print {
+                body { margin: 20px; }
+              }
+            </style>
+          </head>
+          <body>
+            <h1>${formatted}</h1>
+            <p class="author">Author: ${userProfile.name} (@${userProfile.nickname})</p>
+            <div class="status ${entry.tasksCompleted ? 'completed' : 'incomplete'}">
+              ${entry.tasksCompleted ? '✅ Tasks Completed' : '❌ Tasks Not Completed'}
+            </div>
+            
+            <h2>What I worked on</h2>
+            <div class="content">${entry.worked || 'Nothing recorded'}</div>
+            
+            <h2>What I learned</h2>
+            <div class="content">${entry.learned || 'Nothing recorded'}</div>
+            
+            <h2>Challenges</h2>
+            <div class="content">${entry.challenges || 'None'}</div>
+            
+            <h2>Tomorrow's goals</h2>
+            <div class="content">${entry.goals || 'Not set'}</div>
+            
+            <div class="mood">Mood: ${entry.mood}</div>
+          </body>
+          </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+      };
+
+      const exportAllToPDF = () => {
+        const allEntries = Object.keys(entries).sort();
+        if (allEntries.length === 0) {
+          alert('No entries to export');
+          return;
+        }
+
+        let html = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>${userProfile.name}'s Coding Journal</title>
+            <style>
+              body {
+                font-family: 'Georgia', serif;
+                max-width: 900px;
+                margin: 40px auto;
+                padding: 20px;
+                line-height: 1.6;
+                color: #333;
+              }
+              h1 { color: #2c3e50; text-align: center; margin-bottom: 40px; }
+              .entry {
+                page-break-inside: avoid;
+                margin-bottom: 50px;
+                border: 1px solid #ddd;
+                padding: 20px;
+                border-radius: 8px;
+              }
+              .entry-date {
+                color: #3498db;
+                font-size: 1.5em;
+                font-weight: bold;
+                margin-bottom: 10px;
+              }
+              .status {
+                display: inline-block;
+                padding: 3px 10px;
+                border-radius: 15px;
+                font-size: 0.9em;
+                font-weight: bold;
+                margin-bottom: 15px;
+              }
+              .completed { background: #d4edda; color: #155724; }
+              .incomplete { background: #f8d7da; color: #721c24; }
+              h3 { color: #34495e; margin-top: 15px; margin-bottom: 5px; }
+              .content { margin-bottom: 15px; white-space: pre-wrap; }
+              .mood { font-size: 1.5em; }
+              @media print {
+                body { margin: 20px; }
+                .entry { page-break-inside: avoid; }
+              }
+            </style>
+          </head>
+          <body>
+            <h1>📔 ${userProfile.name}'s Coding Journal</h1>
+        `;
+
+        allEntries.forEach(dateStr => {
+          const entry = entries[dateStr];
+          const date = new Date(dateStr);
+          const formatted = date.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          });
+
+          html += `
+            <div class="entry">
+              <div class="entry-date">${formatted}</div>
+              <div class="status ${entry.tasksCompleted ? 'completed' : 'incomplete'}">
+                ${entry.tasksCompleted ? '✅ Tasks Completed' : '❌ Tasks Not Completed'}
+              </div>
+              
+              <h3>What I worked on</h3>
+              <div class="content">${entry.worked || 'Nothing recorded'}</div>
+              
+              <h3>What I learned</h3>
+              <div class="content">${entry.learned || 'Nothing recorded'}</div>
+              
+              <h3>Challenges</h3>
+              <div class="content">${entry.challenges || 'None'}</div>
+              
+              <h3>Tomorrow's goals</h3>
+              <div class="content">${entry.goals || 'Not set'}</div>
+              
+              <div class="mood">Mood: ${entry.mood}</div>
+            </div>
+          `;
+        });
+
+        html += `
+          </body>
+          </html>
+        `;
+
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(html);
+        printWindow.document.close();
+        printWindow.print();
+      };
+
+      const toggleNotifications = async () => {
+        if (!notificationsEnabled) {
+          if (Notification.permission !== 'granted') {
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') {
+              alert('Please enable notifications in your browser settings');
+              return;
+            }
+          }
+          setNotificationsEnabled(true);
+          localStorage.setItem(`notifications-enabled-${userEmail}`, 'true');
+        } else {
+          setNotificationsEnabled(false);
+          localStorage.setItem(`notifications-enabled-${userEmail}`, 'false');
+        }
+      };
+
+      const saveNotificationTime = (time) => {
+        setNotificationTime(time);
+        localStorage.setItem(`notification-time-${userEmail}`, time);
       };
 
       if (!isLoggedIn) {
@@ -311,13 +638,38 @@ ${entry.goals || 'Not set'}
               <p className="text-purple-200">Document your coding journey, one day at a time</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-6">
+            {/* View Toggle */}
+            <div className="flex gap-2 mb-6 justify-center">
+              <button
+                onClick={() => setView('today')}
+                className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                  view === 'today' 
+                    ? 'bg-purple-500 text-white' 
+                    : 'bg-white/10 text-white/70 hover:bg-white/20'
+                }`}
+              >
+                Today's Entry
+              </button>
+              <button
+                onClick={() => setView('history')}
+                className={`px-6 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                  view === 'history' 
+                    ? 'bg-purple-500 text-white' 
+                    : 'bg-white/10 text-white/70 hover:bg-white/20'
+                }`}
+              >
+                <List /> History
+              </button>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-4 mb-6">
               <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
                 <div className="flex items-center gap-2 text-purple-200 mb-1">
                   <div className="w-5 h-5"><Zap /></div>
                   <span className="text-sm">Current Streak</span>
                 </div>
-                <div className="text-3xl font-bold text-white">{getStreak()} days</div>
+                <div className="text-3xl font-bold text-white">{getCurrentStreak()} days</div>
               </div>
               <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
                 <div className="flex items-center gap-2 text-purple-200 mb-1">
@@ -326,123 +678,244 @@ ${entry.goals || 'Not set'}
                 </div>
                 <div className="text-3xl font-bold text-white">{Object.keys(entries).length}</div>
               </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+                <div className="flex items-center gap-2 text-purple-200 mb-1">
+                  <div className="w-5 h-5"><Award /></div>
+                  <span className="text-sm">Completion Rate</span>
+                </div>
+                <div className="text-3xl font-bold text-white">{getCompletionScore()}%</div>
+              </div>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 shadow-2xl">
-              <div className="mb-6">
-                <label className="flex items-center gap-2 text-white mb-2 font-medium">
-                  <div className="w-5 h-5"><Calendar /></div>
-                  Select Date
-                </label>
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  max={getTodayDate()}
-                  className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400"
-                />
+            {/* All Streaks History */}
+            {streakHistory.length > 0 && (
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 mb-6">
+                <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+                  <Zap className="w-5 h-5" /> All Streaks
+                </h3>
+                <div className="space-y-2">
+                  {streakHistory.map((streak, idx) => (
+                    <div key={idx} className="bg-white/10 rounded-lg p-3 flex justify-between items-center">
+                      <span className="text-white">
+                        {streak.start} to {streak.end}
+                      </span>
+                      <span className="text-purple-300 font-bold">{streak.count} days 🔥</span>
+                    </div>
+                  ))}
+                </div>
               </div>
+            )}
 
-              <div className="space-y-4">
-                <div>
-                  <label className="text-white font-medium mb-2 block">What I worked on</label>
-                  <textarea
-                    value={currentEntry.worked}
-                    onChange={(e) => setCurrentEntry({...currentEntry, worked: e.target.value})}
-                    placeholder="Describe what you built or worked on today..."
-                    className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400 min-h-24"
+            {view === 'today' && (
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 shadow-2xl">
+                <div className="mb-6">
+                  <label className="flex items-center gap-2 text-white mb-2 font-medium">
+                    <div className="w-5 h-5"><Calendar /></div>
+                    Select Date
+                  </label>
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    max={getTodayDate()}
+                    className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400"
                   />
                 </div>
 
-                <div>
-                  <label className="text-white font-medium mb-2 block">What I learned</label>
-                  <textarea
-                    value={currentEntry.learned}
-                    onChange={(e) => setCurrentEntry({...currentEntry, learned: e.target.value})}
-                    placeholder="New concepts, techniques, or insights..."
-                    className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400 min-h-24"
-                  />
-                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-white font-medium mb-2 block">What I worked on</label>
+                    <textarea
+                      value={currentEntry.worked}
+                      onChange={(e) => setCurrentEntry({...currentEntry, worked: e.target.value})}
+                      placeholder="Describe what you built or worked on today..."
+                      className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400 min-h-24"
+                    />
+                  </div>
 
-                <div>
-                  <label className="text-white font-medium mb-2 block">Challenges</label>
-                  <textarea
-                    value={currentEntry.challenges}
-                    onChange={(e) => setCurrentEntry({...currentEntry, challenges: e.target.value})}
-                    placeholder="Bugs, obstacles, or tough problems..."
-                    className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400 min-h-20"
-                  />
-                </div>
+                  <div>
+                    <label className="text-white font-medium mb-2 block">What I learned</label>
+                    <textarea
+                      value={currentEntry.learned}
+                      onChange={(e) => setCurrentEntry({...currentEntry, learned: e.target.value})}
+                      placeholder="New concepts, techniques, or insights..."
+                      className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400 min-h-24"
+                    />
+                  </div>
 
-                <div>
-                  <label className="text-white font-medium mb-2 block">Tomorrow's goals</label>
-                  <textarea
-                    value={currentEntry.goals}
-                    onChange={(e) => setCurrentEntry({...currentEntry, goals: e.target.value})}
-                    placeholder="What you want to accomplish next..."
-                    className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400 min-h-20"
-                  />
-                </div>
+                  <div>
+                    <label className="text-white font-medium mb-2 block">Challenges</label>
+                    <textarea
+                      value={currentEntry.challenges}
+                      onChange={(e) => setCurrentEntry({...currentEntry, challenges: e.target.value})}
+                      placeholder="Bugs, obstacles, or tough problems..."
+                      className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400 min-h-20"
+                    />
+                  </div>
 
-                <div>
-                  <label className="text-white font-medium mb-2 block">Today's mood</label>
-                  <div className="flex gap-2 flex-wrap">
-                    {moods.map(mood => (
+                  <div>
+                    <label className="text-white font-medium mb-2 block">Tomorrow's goals</label>
+                    <textarea
+                      value={currentEntry.goals}
+                      onChange={(e) => setCurrentEntry({...currentEntry, goals: e.target.value})}
+                      placeholder="What you want to accomplish next..."
+                      className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400 min-h-20"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-white font-medium mb-2 block">Did you complete today's tasks?</label>
+                    <div className="flex gap-4">
                       <button
-                        key={mood}
-                        onClick={() => setCurrentEntry({...currentEntry, mood})}
-                        className={`text-3xl p-3 rounded-lg transition-all ${
-                          currentEntry.mood === mood 
-                            ? 'bg-purple-500 scale-110' 
-                            : 'bg-white/20 hover:bg-white/30'
+                        onClick={() => setCurrentEntry({...currentEntry, tasksCompleted: true})}
+                        className={`flex-1 py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${
+                          currentEntry.tasksCompleted
+                            ? 'bg-green-500 text-white'
+                            : 'bg-white/20 text-white/70 hover:bg-white/30'
                         }`}
                       >
-                        {mood}
+                        <CheckCircle /> Yes
                       </button>
-                    ))}
+                      <button
+                        onClick={() => setCurrentEntry({...currentEntry, tasksCompleted: false})}
+                        className={`flex-1 py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${
+                          !currentEntry.tasksCompleted
+                            ? 'bg-red-500 text-white'
+                            : 'bg-white/20 text-white/70 hover:bg-white/30'
+                        }`}
+                      >
+                        <XCircle /> No
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-white font-medium mb-2 block">Today's mood</label>
+                    <div className="flex gap-2 flex-wrap">
+                      {moods.map(mood => (
+                        <button
+                          key={mood}
+                          onClick={() => setCurrentEntry({...currentEntry, mood})}
+                          className={`text-3xl p-3 rounded-lg transition-all ${
+                            currentEntry.mood === mood 
+                              ? 'bg-purple-500 scale-110' 
+                              : 'bg-white/20 hover:bg-white/30'
+                          }`}
+                        >
+                          {mood}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={saveEntry}
-                  className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-lg font-semibold hover:from-purple-600 hover:to-pink-600 transition-all"
-                >
-                  💾 Save Entry
-                </button>
-                <button
-                  onClick={exportToMarkdown}
-                  className="px-6 bg-white/20 text-white py-3 rounded-lg font-semibold hover:bg-white/30 transition-all border border-white/30"
-                >
-                  ⬇️ Export .md
-                </button>
-              </div>
+                <div className="flex gap-3 mt-6 flex-wrap">
+                  <button
+                    onClick={saveEntry}
+                    className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-lg font-semibold hover:from-purple-600 hover:to-pink-600 transition-all"
+                  >
+                    💾 Save Entry
+                  </button>
+                  <button
+                    onClick={exportToMarkdown}
+                    className="px-6 bg-white/20 text-white py-3 rounded-lg font-semibold hover:bg-white/30 transition-all border border-white/30"
+                  >
+                    ⬇️ Export .md
+                  </button>
+                  <button
+                    onClick={printEntry}
+                    className="px-6 bg-green-500/30 text-white py-3 rounded-lg font-semibold hover:bg-green-500/40 transition-all border border-green-400/30 flex items-center gap-2"
+                    title="Print or Save as PDF"
+                  >
+                    <Printer /> Print
+                  </button>
+                </div>
 
-              <div className="mt-6 p-4 bg-blue-500/20 border border-blue-400/30 rounded-lg">
-                <p className="text-blue-100 text-sm">
-                  <strong>📝 Daily workflow:</strong> Write your entry → Save → Export as .md → 
-                  Add to your repo → Commit → Push to GitHub!
-                </p>
+                <div className="mt-6 p-4 bg-blue-500/20 border border-blue-400/30 rounded-lg">
+                  <p className="text-blue-100 text-sm">
+                    <strong>📝 Daily workflow:</strong> Write entry → Mark tasks → Save → Export .md → Commit to GitHub!
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
 
-            {Object.keys(entries).length > 0 && (
-              <div className="mt-6 bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                <h2 className="text-2xl font-bold text-white mb-4">Recent Entries</h2>
-                <div className="space-y-2">
-                  {Object.keys(entries).sort().reverse().slice(0, 7).map(date => (
+            {view === 'history' && (
+              <div className="space-y-6">
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-2xl font-bold text-white">All Entries</h2>
                     <button
-                      key={date}
-                      onClick={() => setSelectedDate(date)}
-                      className="w-full text-left px-4 py-3 bg-white/10 hover:bg-white/20 rounded-lg border border-white/20 transition-all"
+                      onClick={exportAllToPDF}
+                      className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-pink-600 transition-all flex items-center gap-2"
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-white font-medium">{date}</span>
-                        <span className="text-2xl">{entries[date].mood}</span>
-                      </div>
+                      <Printer /> Export All
                     </button>
-                  ))}
+                  </div>
+                  
+                  {Object.keys(entries).length === 0 ? (
+                    <p className="text-white/60 text-center py-8">No entries yet. Start writing!</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {Object.keys(entries).sort().reverse().map(date => {
+                        const entry = entries[date];
+                        return (
+                          <button
+                            key={date}
+                            onClick={() => {
+                              setSelectedDate(date);
+                              setView('today');
+                            }}
+                            className="w-full text-left px-4 py-3 bg-white/10 hover:bg-white/20 rounded-lg border border-white/20 transition-all"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <span className="text-white font-medium block">{date}</span>
+                                <span className="text-white/60 text-sm">
+                                  {entry.tasksCompleted ? '✅ Completed' : '❌ Not Completed'}
+                                </span>
+                              </div>
+                              <span className="text-2xl">{entry.mood}</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Notification Settings */}
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                  <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
+                    <Bell /> Reminder Settings
+                  </h2>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-white">Enable daily reminders</span>
+                      <button
+                        onClick={toggleNotifications}
+                        className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                          notificationsEnabled
+                            ? 'bg-green-500 text-white'
+                            : 'bg-white/20 text-white/70'
+                        }`}
+                      >
+                        {notificationsEnabled ? 'ON' : 'OFF'}
+                      </button>
+                    </div>
+                    
+                    {notificationsEnabled && (
+                      <div>
+                        <label className="text-white font-medium mb-2 block">Reminder Time</label>
+                        <input
+                          type="time"
+                          value={notificationTime}
+                          onChange={(e) => saveNotificationTime(e.target.value)}
+                          className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
