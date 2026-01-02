@@ -171,12 +171,10 @@
 
         const entriesData = localStorage.getItem(`journal-entries-${userEmail}`);
         if (entriesData) {
-          setEntries(JSON.parse(entriesData));
-        }
-
-        const streakData = localStorage.getItem(`streak-history-${userEmail}`);
-        if (streakData) {
-          setStreakHistory(JSON.parse(streakData));
+          const loadedEntries = JSON.parse(entriesData);
+          setEntries(loadedEntries);
+          // Recalculate streaks when entries are loaded
+          updateStreak(loadedEntries);
         }
 
         const notifTime = localStorage.getItem(`notification-time-${userEmail}`);
