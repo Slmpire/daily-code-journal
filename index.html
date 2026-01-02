@@ -209,33 +209,35 @@
 
       const updateStreak = (updatedEntries) => {
         const dates = Object.keys(updatedEntries).sort();
-        const streaks = [];
-        let currentStreak = { start: null, end: null, count: 0 };
-
-        dates.forEach((date, index) => {
-          if (index === 0) {
-            currentStreak = { start: date, end: date, count: 1 };
-          } else {
-            const prevDate = new Date(dates[index - 1]);
-            const currDate = new Date(date);
-            const diffDays = Math.floor((currDate - prevDate) / (1000 * 60 * 60 * 24));
-
-            if (diffDays === 1) {
-              // Continue streak
-              currentStreak.end = date;
-              currentStreak.count++;
-            } else {
-              // Streak broken, save current and start new
-              streaks.push({ ...currentStreak });
-              currentStreak = { start: date, end: date, count: 1 };
-            }
-          }
-        });
-
-        // Save the last streak
-        if (currentStreak.start) {
-          streaks.push(currentStreak);
+        if (dates.length === 0) {
+          setStreakHistory([]);
+          return;
         }
+
+        const streaks = [];
+        let currentStreak = { start: dates[0], end: dates[0], count: 1 };
+
+        for (let i = 1; i < dates.length; i++) {
+          const prevDate = new Date(dates[i - 1]);
+          const currDate = new Date(dates[i]);
+          
+          // Calculate difference in days
+          const diffDays = Math.floor((currDate - prevDate) / (1000 * 60 * 60 * 24));
+
+          if (diffDays === 1) {
+            // Consecutive day - continue current streak
+            currentStreak.end = dates[i];
+            currentStreak.count++;
+          } else if (diffDays > 1) {
+            // Gap detected - save current streak and start new one
+            streaks.push({ ...currentStreak });
+            currentStreak = { start: dates[i], end: dates[i], count: 1 };
+          }
+          // If diffDays === 0 (same day), just continue without incrementing
+        }
+
+        // Don't forget to save the last streak
+        streaks.push(currentStreak);
 
         setStreakHistory(streaks);
         localStorage.setItem(`streak-history-${userEmail}`, JSON.stringify(streaks));
@@ -243,16 +245,21 @@
 
       const getCurrentStreak = () => {
         if (streakHistory.length === 0) return 0;
+        
         const lastStreak = streakHistory[streakHistory.length - 1];
         const today = getTodayDate();
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
         const yesterdayStr = yesterday.toISOString().split('T')[0];
 
-        // Check if last streak is current
+        // Current streak is only valid if:
+        // - Last entry is today, OR
+        // - Last entry is yesterday (you have until end of today to continue)
         if (lastStreak.end === today || lastStreak.end === yesterdayStr) {
           return lastStreak.count;
         }
+        
+        // Streak is broken if last entry is older than yesterday
         return 0;
       };
 
