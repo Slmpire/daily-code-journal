@@ -1,78 +1,79 @@
 import { useState, useEffect } from 'react'
+import { useAuth } from './hooks/useAuth'
 import Login from './components/Login'
 import ProfileSetup from './components/ProfileSetup'
 import Journal from './components/Journal'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { db } from './firebase'
 
 function App() {
-  const [userEmail, setUserEmail] = useState('')
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const { user, loading, login, logout } = useAuth()
   const [userProfile, setUserProfile] = useState({ name: '', nickname: '' })
   const [showProfileSetup, setShowProfileSetup] = useState(false)
+  const [profileLoading, setProfileLoading] = useState(true)
 
   useEffect(() => {
-    checkAuth()
-    requestNotificationPermission()
-  }, [])
+    if (user) {
+      loadProfile()
+    } else {
+      setProfileLoading(false)
+    }
+  }, [user])
 
-  const checkAuth = () => {
-    const stored = localStorage.getItem('current-user-email')
-    if (stored) {
-      setUserEmail(stored)
-      setIsLoggedIn(true)
-      const profileData = localStorage.getItem(`profile-${stored}`)
-      if (profileData) {
-        setUserProfile(JSON.parse(profileData))
+  const loadProfile = async () => {
+    if (!user) return
+
+    try {
+      const profileDoc = await getDoc(doc(db, 'profiles', user.uid))
+      
+      if (profileDoc.exists()) {
+        setUserProfile(profileDoc.data())
+        setShowProfileSetup(false)
       } else {
         setShowProfileSetup(true)
       }
+    } catch (error) {
+      console.error('Error loading profile:', error)
+    } finally {
+      setProfileLoading(false)
     }
   }
 
-  const requestNotificationPermission = async () => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      await Notification.requestPermission()
-    }
-  }
-
-  const handleLogin = (email) => {
-    if (!email || !email.includes('@')) {
-      alert('Please enter a valid email address')
-      return
-    }
-
-    localStorage.setItem('current-user-email', email)
-    setUserEmail(email)
-    setIsLoggedIn(true)
-
-    const profileData = localStorage.getItem(`profile-${email}`)
-    if (!profileData) {
-      setShowProfileSetup(true)
-    } else {
-      setUserProfile(JSON.parse(profileData))
-    }
-  }
-
-  const handleSaveProfile = (profile) => {
+  const handleSaveProfile = async (profile) => {
     if (!profile.name || !profile.nickname) {
       alert('Please fill in both name and nickname')
       return
     }
 
-    localStorage.setItem(`profile-${userEmail}`, JSON.stringify(profile))
-    setUserProfile(profile)
-    setShowProfileSetup(false)
-    alert('✅ Profile saved!')
+    try {
+      await setDoc(doc(db, 'profiles', user.uid), profile)
+      setUserProfile(profile)
+      setShowProfileSetup(false)
+      alert('✅ Profile saved!')
+    } catch (error) {
+      console.error('Error saving profile:', error)
+      alert('Failed to save profile. Please try again.')
+    }
   }
 
-  const handleLogout = () => {
-    localStorage.removeItem('current-user-email')
-    setIsLoggedIn(false)
-    setUserEmail('')
-    setUserProfile({ name: '', nickname: '' })
+  const handleLogout = async () => {
+    const result = await logout()
+    if (result.success) {
+      setUserProfile({ name: '', nickname: '' })
+      setShowProfileSetup(false)
+    }
   }
 
-  if (!isLoggedIn) {
-    return <Login onLogin={handleLogin} />
+  if (loading || profileLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <Login onLogin={login} />
   }
 
   if (showProfileSetup) {
@@ -87,7 +88,7 @@ function App() {
 
   return (
     <Journal
-      userEmail={userEmail}
+      userId={user.uid}
       userProfile={userProfile}
       onLogout={handleLogout}
     />

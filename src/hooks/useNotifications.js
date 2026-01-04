@@ -1,28 +1,35 @@
 import { useState, useEffect } from 'react'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { db } from '../firebase'
 
-export function useNotifications(userEmail) {
+export function useNotifications(userId) {
   const [notificationTime, setNotificationTime] = useState('18:00')
   const [notificationsEnabled, setNotificationsEnabled] = useState(false)
 
   useEffect(() => {
-    if (userEmail) {
-      const notifTime = localStorage.getItem(`notification-time-${userEmail}`)
-      if (notifTime) {
-        setNotificationTime(notifTime)
-      }
-
-      const notifEnabled = localStorage.getItem(`notifications-enabled-${userEmail}`)
-      if (notifEnabled === 'true') {
-        setNotificationsEnabled(true)
-      }
+    if (userId) {
+      loadSettings()
     }
-  }, [userEmail])
+  }, [userId])
 
   useEffect(() => {
     if (notificationsEnabled) {
       scheduleNotification()
     }
   }, [notificationTime, notificationsEnabled])
+
+  const loadSettings = async () => {
+    try {
+      const settingsDoc = await getDoc(doc(db, 'users', userId, 'settings', 'notifications'))
+      if (settingsDoc.exists()) {
+        const data = settingsDoc.data()
+        setNotificationTime(data.time || '18:00')
+        setNotificationsEnabled(data.enabled || false)
+      }
+    } catch (error) {
+      console.error('Error loading notification settings:', error)
+    }
+  }
 
   const scheduleNotification = () => {
     const [hours, minutes] = notificationTime.split(':')
@@ -49,7 +56,9 @@ export function useNotifications(userEmail) {
   }
 
   const toggleNotifications = async () => {
-    if (!notificationsEnabled) {
+    const newState = !notificationsEnabled
+
+    if (newState) {
       if (Notification.permission !== 'granted') {
         const permission = await Notification.requestPermission()
         if (permission !== 'granted') {
@@ -57,17 +66,29 @@ export function useNotifications(userEmail) {
           return
         }
       }
-      setNotificationsEnabled(true)
-      localStorage.setItem(`notifications-enabled-${userEmail}`, 'true')
-    } else {
-      setNotificationsEnabled(false)
-      localStorage.setItem(`notifications-enabled-${userEmail}`, 'false')
+    }
+
+    try {
+      await setDoc(doc(db, 'users', userId, 'settings', 'notifications'), {
+        enabled: newState,
+        time: notificationTime
+      })
+      setNotificationsEnabled(newState)
+    } catch (error) {
+      console.error('Error saving notification settings:', error)
     }
   }
 
-  const saveNotificationTime = (time) => {
-    setNotificationTime(time)
-    localStorage.setItem(`notification-time-${userEmail}`, time)
+  const saveNotificationTime = async (time) => {
+    try {
+      await setDoc(doc(db, 'users', userId, 'settings', 'notifications'), {
+        enabled: notificationsEnabled,
+        time
+      })
+      setNotificationTime(time)
+    } catch (error) {
+      console.error('Error saving notification time:', error)
+    }
   }
 
   return {

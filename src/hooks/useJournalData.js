@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useFirestoreJournal } from './useFirestoreJournal'
 import { 
   calculateStreaks, 
   getCurrentStreak as getStreak,
@@ -7,8 +8,8 @@ import {
   printAllEntries
 } from '../utils/journalUtils'
 
-export function useJournalData(userEmail, userProfile) {
-  const [entries, setEntries] = useState({})
+export function useJournalData(userId, userProfile) {
+  const { entries, loading, saveEntry: saveToFirestore } = useFirestoreJournal(userId)
   const [streakHistory, setStreakHistory] = useState([])
   const [currentEntry, setCurrentEntry] = useState({
     worked: '',
@@ -21,11 +22,14 @@ export function useJournalData(userEmail, userProfile) {
   const [selectedDate, setSelectedDate] = useState('')
 
   useEffect(() => {
-    if (userEmail) {
-      setSelectedDate(getTodayDate())
-      loadUserData()
+    setSelectedDate(getTodayDate())
+  }, [])
+
+  useEffect(() => {
+    if (Object.keys(entries).length > 0) {
+      updateStreak(entries)
     }
-  }, [userEmail])
+  }, [entries])
 
   useEffect(() => {
     if (selectedDate && entries[selectedDate]) {
@@ -44,34 +48,21 @@ export function useJournalData(userEmail, userProfile) {
 
   const getTodayDate = () => new Date().toISOString().split('T')[0]
 
-  const loadUserData = () => {
-    const entriesData = localStorage.getItem(`journal-entries-${userEmail}`)
-    if (entriesData) {
-      const loadedEntries = JSON.parse(entriesData)
-      setEntries(loadedEntries)
-      updateStreak(loadedEntries)
-    }
-  }
-
   const updateStreak = (updatedEntries) => {
     const streaks = calculateStreaks(updatedEntries)
     setStreakHistory(streaks)
-    localStorage.setItem(`streak-history-${userEmail}`, JSON.stringify(streaks))
   }
 
-  const saveEntry = () => {
+  const saveEntry = async () => {
     if (!selectedDate) return
 
-    const updated = {
-      ...entries,
-      [selectedDate]: currentEntry
-    }
-
-    localStorage.setItem(`journal-entries-${userEmail}`, JSON.stringify(updated))
-    setEntries(updated)
-    updateStreak(updated)
+    const result = await saveToFirestore(selectedDate, currentEntry)
     
-    alert('✅ Entry saved!')
+    if (result.success) {
+      alert('✅ Entry saved to cloud!')
+    } else {
+      alert('❌ Failed to save: ' + result.error)
+    }
   }
 
   const getCurrentStreak = () => {
@@ -107,6 +98,7 @@ export function useJournalData(userEmail, userProfile) {
 
   return {
     entries,
+    loading,
     streakHistory,
     currentEntry,
     setCurrentEntry,

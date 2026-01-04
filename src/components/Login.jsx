@@ -1,10 +1,24 @@
+import { useState } from 'react'
 import { BookOpen } from './Icons'
 
 function Login({ onLogin }) {
-  const handleSubmit = (e) => {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    const email = e.target.email.value
-    onLogin(email)
+    setError('')
+    setIsLoading(true)
+
+    const result = await onLogin(email, password)
+    
+    if (!result.success) {
+      setError(result.error)
+    }
+    
+    setIsLoading(false)
   }
 
   return (
@@ -15,27 +29,52 @@ function Login({ onLogin }) {
             <BookOpen />
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">Daily Code Journal</h1>
-          <p className="text-purple-200">Enter your email to continue</p>
+          <p className="text-purple-200">Sign in to continue</p>
         </div>
 
         <form onSubmit={handleSubmit}>
-          <input
-            type="email"
-            name="email"
-            placeholder="your.email@example.com"
-            className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400 mb-4"
-            required
-          />
+          <div className="mb-4">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="your.email@example.com"
+              className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400"
+              required
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="mb-4">
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password (min 6 characters)"
+              className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400"
+              required
+              minLength={6}
+              disabled={isLoading}
+            />
+          </div>
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm">
+              {error}
+            </div>
+          )}
+
           <button
             type="submit"
-            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-lg font-semibold hover:from-purple-600 hover:to-pink-600 transition-all"
+            disabled={isLoading}
+            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-lg font-semibold hover:from-purple-600 hover:to-pink-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Continue
+            {isLoading ? 'Loading...' : 'Sign In / Sign Up'}
           </button>
         </form>
 
         <p className="text-white/60 text-sm text-center mt-4">
-          No password needed. Your data is stored locally in your browser.
+          Your data is securely stored in the cloud and synced across devices.
         </p>
       </div>
     </div>

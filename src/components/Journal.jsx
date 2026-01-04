@@ -7,11 +7,12 @@ import HistoryView from './HistoryView'
 import { useJournalData } from '../hooks/useJournalData'
 import { useNotifications } from '../hooks/useNotifications'
 
-function Journal({ userEmail, userProfile, onLogout }) {
+function Journal({ userId, userProfile, onLogout }) {
   const [view, setView] = useState('today')
   
   const {
     entries,
+    loading,
     streakHistory,
     currentEntry,
     setCurrentEntry,
@@ -23,14 +24,22 @@ function Journal({ userEmail, userProfile, onLogout }) {
     exportToMarkdown,
     printEntry,
     exportAllToPDF
-  } = useJournalData(userEmail, userProfile)
+  } = useJournalData(userId, userProfile)
 
   const {
     notificationTime,
     notificationsEnabled,
     toggleNotifications,
     saveNotificationTime
-  } = useNotifications(userEmail)
+  } = useNotifications(userId)
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="text-white text-xl">Loading your journal...</div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
@@ -59,6 +68,7 @@ function Journal({ userEmail, userProfile, onLogout }) {
             Daily Code Journal
           </h1>
           <p className="text-purple-200">Document your coding journey, one day at a time</p>
+          <p className="text-purple-300 text-sm mt-2">☁️ Synced across all your devices</p>
         </div>
 
         {/* View Toggle */}
