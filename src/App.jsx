@@ -1,10 +1,33 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { useAuth } from './hooks/useAuth'
-import Login from './components/Login'
-import ProfileSetup from './components/ProfileSetup'
-import Journal from './components/Journal'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { db } from './firebase'
+
+// Lazy load components
+const Login = lazy(() => import('./components/Login'))
+const ProfileSetup = lazy(() => import('./components/ProfileSetup'))
+const Journal = lazy(() => import('./components/Journal'))
+const InstallPrompt = lazy(() => import('./components/InstallPrompt'))
+
+/**
+ * Loading Component
+ * Uses the rolling spinner (animate-spin) and custom fade-in
+ */
+const Loading = () => (
+  <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col items-center justify-center animate-fade-in">
+    <div className="relative flex items-center justify-center">
+      {/* Glow Effect */}
+      <div className="absolute w-24 h-24 bg-purple-500/20 rounded-full blur-2xl"></div>
+      
+      {/* Rolling Spinner */}
+      <div className="w-16 h-16 border-4 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
+    </div>
+    
+    <p className="mt-8 text-purple-200/60 text-xs font-bold tracking-[0.4em] uppercase">
+      Loading
+    </p>
+  </div>
+)
 
 function App() {
   const { user, loading, login, logout } = useAuth()
@@ -22,10 +45,8 @@ function App() {
 
   const loadProfile = async () => {
     if (!user) return
-
     try {
       const profileDoc = await getDoc(doc(db, 'profiles', user.uid))
-      
       if (profileDoc.exists()) {
         setUserProfile(profileDoc.data())
         setShowProfileSetup(false)
@@ -44,7 +65,6 @@ function App() {
       alert('Please fill in both name and nickname')
       return
     }
-
     try {
       await setDoc(doc(db, 'profiles', user.uid), profile)
       setUserProfile(profile)
@@ -64,34 +84,34 @@ function App() {
     }
   }
 
+  // Handle Initial Data Loading
   if (loading || profileLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
-      </div>
-    )
-  }
-
-  if (!user) {
-    return <Login onLogin={login} />
-  }
-
-  if (showProfileSetup) {
-    return (
-      <ProfileSetup
-        profile={userProfile}
-        setProfile={setUserProfile}
-        onSave={handleSaveProfile}
-      />
-    )
+    return <Loading />
   }
 
   return (
-    <Journal
-      userId={user.uid}
-      userProfile={userProfile}
-      onLogout={handleLogout}
-    />
+    <Suspense fallback={<Loading />}>
+      <div className="animate-fade-in">
+        {!user ? (
+          <Login onLogin={login} />
+        ) : showProfileSetup ? (
+          <ProfileSetup
+            profile={userProfile}
+            setProfile={setUserProfile}
+            onSave={handleSaveProfile}
+          />
+        ) : (
+          <>
+            <InstallPrompt />
+            <Journal
+              userId={user.uid}
+              userProfile={userProfile}
+              onLogout={handleLogout}
+            />
+          </>
+        )}
+      </div>
+    </Suspense>
   )
 }
 
