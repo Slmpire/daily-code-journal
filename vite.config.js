@@ -6,8 +6,6 @@ import viteCompression from 'vite-plugin-compression'
 export default defineConfig({
   plugins: [
     react(),
-    
-    // Compress files with gzip and brotli
     viteCompression({
       algorithm: 'gzip',
       ext: '.gz',
@@ -16,8 +14,6 @@ export default defineConfig({
       algorithm: 'brotliCompress',
       ext: '.br',
     }),
-    
-    // PWA configuration
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
@@ -29,21 +25,21 @@ export default defineConfig({
         background_color: '#0f172a',
         display: 'standalone',
         orientation: 'portrait',
-        scope: '/',
-        start_url: '/',
+        scope: '/daily-code-journal/',  // ← Add repo name
+        start_url: '/daily-code-journal/',  // ← Add repo name
         icons: [
           {
-            src: 'pwa-192x192.png',
+            src: '/daily-code-journal/pwa-192x192.png',  // ← Add repo name
             sizes: '192x192',
             type: 'image/png',
           },
           {
-            src: 'pwa-512x512.png',
+            src: '/daily-code-journal/pwa-512x512.png',  // ← Add repo name
             sizes: '512x512',
             type: 'image/png',
           },
           {
-            src: 'pwa-512x512.png',
+            src: '/daily-code-journal/pwa-512x512.png',  // ← Add repo name
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable',
@@ -51,7 +47,6 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // Cache strategies
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -60,7 +55,7 @@ export default defineConfig({
               cacheName: 'google-fonts-cache',
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+                maxAgeSeconds: 60 * 60 * 24 * 365,
               },
               cacheableResponse: {
                 statuses: [0, 200],
@@ -74,7 +69,7 @@ export default defineConfig({
               cacheName: 'firebase-storage-cache',
               expiration: {
                 maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 * 7, // 1 week
+                maxAgeSeconds: 60 * 60 * 24 * 7,
               },
             },
           },
@@ -83,13 +78,10 @@ export default defineConfig({
     }),
   ],
   
-  base: '/daily-code-journal/',
+  base: '/daily-code-journal/',  // ← Your repo name
   
   build: {
-    // Enable source maps for production debugging
     sourcemap: false,
-    
-    // Optimize chunks
     rollupOptions: {
       output: {
         manualChunks: {
@@ -100,21 +92,16 @@ export default defineConfig({
         },
       },
     },
-    
-    // Increase chunk size warning limit
     chunkSizeWarningLimit: 1000,
-    
-    // Minify options
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true, // Remove console.logs in production
+        drop_console: true,
         drop_debugger: true,
       },
     },
   },
   
-  // Optimize dependencies
   optimizeDeps: {
     include: ['react', 'react-dom', 'firebase/app', 'firebase/auth', 'firebase/firestore'],
   },
