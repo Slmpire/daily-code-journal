@@ -78,7 +78,7 @@ export default defineConfig({
     }),
   ],
   
-  base: '/',  // ← Your repo name
+  base: '/daily-code-journal/',  // ← Your repo name
   
   build: {
     sourcemap: false,
