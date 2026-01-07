@@ -12,13 +12,19 @@ export function useJournalData(userId, userProfile) {
   const { entries, loading, saveEntry: saveToFirestore } = useFirestoreJournal(userId)
   const [streakHistory, setStreakHistory] = useState([])
   const [currentEntry, setCurrentEntry] = useState({
-    worked: '',
-    learned: '',
-    challenges: '',
-    goals: '',
-    mood: '😊',
-    tasksCompleted: false
-  })
+  worked: '',
+  learned: '',
+  challenges: '',
+  goals: '',
+  mood: '😊',
+  tasksCompleted: false,
+  dailyGoals: [
+    { text: '', completed: false },
+    { text: '', completed: false },
+    { text: '', completed: false }
+  ],
+  tags: []
+})
   const [selectedDate, setSelectedDate] = useState('')
 
   useEffect(() => {
@@ -31,20 +37,34 @@ export function useJournalData(userId, userProfile) {
     }
   }, [entries])
 
-  useEffect(() => {
-    if (selectedDate && entries[selectedDate]) {
-      setCurrentEntry(entries[selectedDate])
-    } else if (selectedDate) {
-      setCurrentEntry({
-        worked: '',
-        learned: '',
-        challenges: '',
-        goals: '',
-        mood: '😊',
-        tasksCompleted: false
-      })
-    }
-  }, [selectedDate, entries])
+useEffect(() => {
+  if (selectedDate && entries[selectedDate]) {
+    setCurrentEntry({
+      ...entries[selectedDate],
+      dailyGoals: entries[selectedDate].dailyGoals || [
+        { text: '', completed: false },
+        { text: '', completed: false },
+        { text: '', completed: false }
+      ],
+      tags: entries[selectedDate].tags || []
+    })
+  } else if (selectedDate) {
+    setCurrentEntry({
+      worked: '',
+      learned: '',
+      challenges: '',
+      goals: '',
+      mood: '😊',
+      tasksCompleted: false,
+      dailyGoals: [
+        { text: '', completed: false },
+        { text: '', completed: false },
+        { text: '', completed: false }
+      ],
+      tags: []
+    })
+  }
+}, [selectedDate, entries])
 
   const getTodayDate = () => new Date().toISOString().split('T')[0]
 
@@ -52,18 +72,22 @@ export function useJournalData(userId, userProfile) {
     const streaks = calculateStreaks(updatedEntries)
     setStreakHistory(streaks)
   }
-
+  
   const saveEntry = async () => {
-    if (!selectedDate) return
+  if (!selectedDate) return
 
-    const result = await saveToFirestore(selectedDate, currentEntry)
-    
-    if (result.success) {
-      alert('✅ Entry saved to cloud!')
-    } else {
-      alert('❌ Failed to save: ' + result.error)
-    }
+  const result = await saveToFirestore(selectedDate, {
+    ...currentEntry,
+    dailyGoals: currentEntry.dailyGoals || [],
+    tags: currentEntry.tags || []
+  })
+  
+  if (result.success) {
+    alert('✅ Entry saved to cloud!')
+  } else {
+    alert('❌ Failed to save: ' + result.error)
   }
+}
 
   const getCurrentStreak = () => {
     return getStreak(streakHistory)

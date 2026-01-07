@@ -25,7 +25,6 @@ export function useAuth() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password)
       return { success: true, user: userCredential.user }
     } catch (error) {
-      // If user doesn't exist, create account
       if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
         try {
           const userCredential = await createUserWithEmailAndPassword(auth, email, password)

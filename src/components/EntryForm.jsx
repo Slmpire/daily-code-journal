@@ -1,11 +1,12 @@
 import { Calendar, Printer, CheckCircle, XCircle } from './Icons'
+import TagInput from './TagInput'
 
 const moods = ['😊', '🤔', '😤', '🔥', '😴', '🎉', '😅', '💪']
 
 function EntryForm({ 
   selectedDate, 
   setSelectedDate, 
-  currentEntry, 
+  currentEntry,
   setCurrentEntry, 
   onSave, 
   onExportMarkdown, 
@@ -70,10 +71,63 @@ function EntryForm({
           />
         </div>
 
+        {/* Daily Goals Section */}
+        <div>
+          <label className="text-white font-medium mb-2 block">Today's Goals (Check off as you complete)</label>
+          <div className="space-y-2">
+            {(currentEntry.dailyGoals || [
+              { text: '', completed: false },
+              { text: '', completed: false },
+              { text: '', completed: false }
+            ]).map((goal, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={goal.completed || false}
+                  onChange={(e) => {
+                    const newGoals = [...(currentEntry.dailyGoals || [])]
+                    newGoals[index] = { ...newGoals[index], completed: e.target.checked }
+                    setCurrentEntry({ ...currentEntry, dailyGoals: newGoals })
+                  }}
+                  className="w-5 h-5 rounded bg-white/20 border-white/30 text-purple-500 focus:ring-2 focus:ring-purple-400"
+                />
+                <input
+                  type="text"
+                  value={goal.text || ''}
+                  onChange={(e) => {
+                    const newGoals = [...(currentEntry.dailyGoals || [])]
+                    newGoals[index] = { text: e.target.value, completed: goal.completed || false }
+                    setCurrentEntry({ ...currentEntry, dailyGoals: newGoals })
+                  }}
+                  placeholder={`Goal ${index + 1}`}
+                  className="flex-1 px-4 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                />
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              const newGoals = [...(currentEntry.dailyGoals || []), { text: '', completed: false }]
+              setCurrentEntry({ ...currentEntry, dailyGoals: newGoals })
+            }}
+            className="mt-2 text-sm text-purple-300 hover:text-purple-200"
+          >
+            + Add another goal
+          </button>
+        </div>
+
+        {/* Tags Section */}
+        <TagInput
+          tags={currentEntry.tags || []}
+          onTagsChange={(newTags) => setCurrentEntry({ ...currentEntry, tags: newTags })}
+        />
+
         <div>
           <label className="text-white font-medium mb-2 block">Did you complete today's tasks?</label>
           <div className="flex gap-4">
             <button
+              type="button"
               onClick={() => setCurrentEntry({ ...currentEntry, tasksCompleted: true })}
               className={`flex-1 py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${
                 currentEntry.tasksCompleted
@@ -84,6 +138,7 @@ function EntryForm({
               <CheckCircle /> Yes
             </button>
             <button
+              type="button"
               onClick={() => setCurrentEntry({ ...currentEntry, tasksCompleted: false })}
               className={`flex-1 py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${
                 !currentEntry.tasksCompleted
@@ -102,6 +157,7 @@ function EntryForm({
             {moods.map(mood => (
               <button
                 key={mood}
+                type="button"
                 onClick={() => setCurrentEntry({ ...currentEntry, mood })}
                 className={`text-3xl p-3 rounded-lg transition-all ${
                   currentEntry.mood === mood 
@@ -119,18 +175,21 @@ function EntryForm({
       <div className="flex gap-3 mt-6 flex-wrap">
         <button
           onClick={onSave}
+          type="button"
           className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-lg font-semibold hover:from-purple-600 hover:to-pink-600 transition-all"
         >
           💾 Save Entry
         </button>
         <button
           onClick={onExportMarkdown}
+          type="button"
           className="px-6 bg-white/20 text-white py-3 rounded-lg font-semibold hover:bg-white/30 transition-all border border-white/30"
         >
           ⬇️ Export .md
         </button>
         <button
           onClick={onPrint}
+          type="button"
           className="px-6 bg-green-500/30 text-white py-3 rounded-lg font-semibold hover:bg-green-500/40 transition-all border border-green-400/30 flex items-center gap-2"
           title="Print or Save as PDF"
         >
@@ -140,7 +199,7 @@ function EntryForm({
 
       <div className="mt-6 p-4 bg-blue-500/20 border border-blue-400/30 rounded-lg">
         <p className="text-blue-100 text-sm">
-          <strong>📝 Daily workflow:</strong> Write entry → Mark tasks → Save → Export .md → Commit to GitHub!
+          <strong>📝 Daily workflow:</strong> Write entry → Set goals → Mark tasks → Save → Export .md → Commit to GitHub!
         </p>
       </div>
     </div>

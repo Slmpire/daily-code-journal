@@ -1,20 +1,17 @@
-import { useState, useEffect, lazy, Suspense } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from './hooks/useAuth'
+import Login from './components/Login'
+import ProfileSetup from './components/ProfileSetup'
+import Journal from './components/Journal'
+import InstallPrompt from './components/InstallPrompt'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { db } from './firebase'
 
-// Lazy load components
-const Login = lazy(() => import('./components/Login'))
-const ProfileSetup = lazy(() => import('./components/ProfileSetup'))
-const Journal = lazy(() => import('./components/Journal'))
-const InstallPrompt = lazy(() => import('./components/InstallPrompt'))
-
 /**
  * Loading Component
- * Uses the rolling spinner (animate-spin) and custom fade-in
  */
 const Loading = () => (
-  <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col items-center justify-center animate-fade-in">
+  <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col items-center justify-center">
     <div className="relative flex items-center justify-center">
       {/* Glow Effect */}
       <div className="absolute w-24 h-24 bg-purple-500/20 rounded-full blur-2xl"></div>
@@ -89,29 +86,29 @@ function App() {
     return <Loading />
   }
 
+  if (!user) {
+    return <Login onLogin={login} />
+  }
+
+  if (showProfileSetup) {
+    return (
+      <ProfileSetup
+        profile={userProfile}
+        setProfile={setUserProfile}
+        onSave={handleSaveProfile}
+      />
+    )
+  }
+
   return (
-    <Suspense fallback={<Loading />}>
-      <div className="animate-fade-in">
-        {!user ? (
-          <Login onLogin={login} />
-        ) : showProfileSetup ? (
-          <ProfileSetup
-            profile={userProfile}
-            setProfile={setUserProfile}
-            onSave={handleSaveProfile}
-          />
-        ) : (
-          <>
-            <InstallPrompt />
-            <Journal
-              userId={user.uid}
-              userProfile={userProfile}
-              onLogout={handleLogout}
-            />
-          </>
-        )}
-      </div>
-    </Suspense>
+    <>
+      <InstallPrompt />
+      <Journal
+        userId={user.uid}
+        userProfile={userProfile}
+        onLogout={handleLogout}
+      />
+    </>
   )
 }
 

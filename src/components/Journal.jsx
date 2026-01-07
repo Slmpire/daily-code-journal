@@ -1,14 +1,17 @@
 import { useState } from 'react'
-import { BookOpen, LogOut } from './Icons'
+import { BookOpen, LogOut, BarChart3 } from './Icons' 
 import Stats from './Stats'
 import StreakHistory from './StreakHistory'
 import EntryForm from './EntryForm'
 import HistoryView from './HistoryView'
+import Dashboard from './Dashboard' 
+import MoodChart from './MoodChart'  
+import HabitTracker from './HabitTracker'
 import { useJournalData } from '../hooks/useJournalData'
 import { useNotifications } from '../hooks/useNotifications'
 
 function Journal({ userId, userProfile, onLogout }) {
-  const [view, setView] = useState('today')
+  const [view, setView] = useState('today')  // 'today', 'history', or 'dashboard'
   
   const {
     entries,
@@ -43,7 +46,7 @@ function Journal({ userId, userProfile, onLogout }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">  {/* Changed from max-w-4xl to max-w-6xl */}
         {/* Header */}
         <div className="text-center mb-8 pt-8">
           <div className="flex items-center justify-between mb-4">
@@ -72,7 +75,17 @@ function Journal({ userId, userProfile, onLogout }) {
         </div>
 
         {/* View Toggle */}
-        <div className="flex gap-2 mb-6 justify-center">
+        <div className="flex gap-2 mb-6 justify-center flex-wrap">
+          <button
+            onClick={() => setView('dashboard')}
+            className={`px-6 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+              view === 'dashboard' 
+                ? 'bg-purple-500 text-white' 
+                : 'bg-white/10 text-white/70 hover:bg-white/20'
+            }`}
+          >
+            <BarChart3 className="w-4 h-4" /> Dashboard
+          </button>
           <button
             onClick={() => setView('today')}
             className={`px-6 py-2 rounded-lg font-medium transition-all ${
@@ -95,28 +108,47 @@ function Journal({ userId, userProfile, onLogout }) {
           </button>
         </div>
 
-        {/* Stats */}
-        <Stats
-          currentStreak={getCurrentStreak()}
-          totalEntries={Object.keys(entries).length}
-          completionScore={getCompletionScore()}
-        />
+        {/* Conditional Content */}
+        {view === 'dashboard' && (
+          <div className="space-y-6">
+            <Dashboard 
+              entries={entries}
+              currentStreak={getCurrentStreak()}
+              completionScore={getCompletionScore()}
+            />
+            <div className="grid md:grid-cols-2 gap-6">
+              <MoodChart entries={entries} />
+              <HabitTracker userId={userId} />
+            </div>
+          </div>
+        )}
 
-        {/* Streak History */}
-        <StreakHistory streakHistory={streakHistory} />
+        {view === 'today' && (
+          <>
+            {/* Stats */}
+            <Stats
+              currentStreak={getCurrentStreak()}
+              totalEntries={Object.keys(entries).length}
+              completionScore={getCompletionScore()}
+            />
 
-        {/* Main Content */}
-        {view === 'today' ? (
-          <EntryForm
-            selectedDate={selectedDate}
-            setSelectedDate={setSelectedDate}
-            currentEntry={currentEntry}
-            setCurrentEntry={setCurrentEntry}
-            onSave={saveEntry}
-            onExportMarkdown={exportToMarkdown}
-            onPrint={printEntry}
-          />
-        ) : (
+            {/* Streak History */}
+            <StreakHistory streakHistory={streakHistory} />
+
+            {/* Entry Form */}
+            <EntryForm
+              selectedDate={selectedDate}
+              setSelectedDate={setSelectedDate}
+              currentEntry={currentEntry}
+              setCurrentEntry={setCurrentEntry}
+              onSave={saveEntry}
+              onExportMarkdown={exportToMarkdown}
+              onPrint={printEntry}
+            />
+          </>
+        )}
+
+        {view === 'history' && (
           <HistoryView
             entries={entries}
             onSelectEntry={(date) => {
