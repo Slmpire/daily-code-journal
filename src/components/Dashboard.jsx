@@ -14,9 +14,8 @@ function Dashboard({ entries, currentStreak, completionScore }) {
   ).length
 
   const totalGoalsCompleted = Object.values(entries).reduce((sum, entry) => 
-    sum + (entry.goals?.filter(g => g.completed).length || 0), 0
-  )
-
+  sum + (entry.dailyGoals?.filter(g => g.completed).length || 0), 0
+)
   const avgMoodScore = () => {
     const moodScores = {
       '😴': 1, '😤': 2, '🤔': 3, '😅': 4, 
