@@ -5,7 +5,7 @@ function ProfileSetup({ profile, setProfile, onSave }) {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
       <div className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20 shadow-2xl max-w-md w-full">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 mx-auto mb-4 text-purple-300">
+          <div className="w-14 h-16 mx-auto mb-4 text-purple-300">
             <User />
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">Setup Your Profile</h1>
