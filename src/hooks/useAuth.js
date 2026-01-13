@@ -4,7 +4,8 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  fetchSignInMethodsForEmail
+  fetchSignInMethodsForEmail,
+  sendPasswordResetEmail
 } from 'firebase/auth'
 import { auth } from '../firebase'
 
@@ -67,6 +68,20 @@ export function useAuth() {
     }
   }
 
+  const resetPassword = async (email) => {
+    try {
+      await sendPasswordResetEmail(auth, email)
+      return { success: true, message: 'Password reset email sent! Check your inbox.' }
+    } catch (error) {
+      if (error.code === 'auth/user-not-found') {
+        return { success: false, error: 'No account found with this email.' }
+      } else if (error.code === 'auth/invalid-email') {
+        return { success: false, error: 'Invalid email address.' }
+      }
+      return { success: false, error: error.message }
+    }
+  }
+
   const logout = async () => {
     try {
       await signOut(auth)
@@ -76,5 +91,5 @@ export function useAuth() {
     }
   }
 
-  return { user, loading, login, logout }
+  return { user, loading, login, logout, resetPassword }
 }

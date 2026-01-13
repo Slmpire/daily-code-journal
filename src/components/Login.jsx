@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import { BookOpen } from './Icons'
 
-function Login({ onLogin }) {
+function Login({ onLogin, onResetPassword }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [focusedField, setFocusedField] = useState(null)
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [resetEmail, setResetEmail] = useState('')
+  const [resetMessage, setResetMessage] = useState('')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -16,6 +19,32 @@ function Login({ onLogin }) {
     const result = await onLogin(email, password)
     
     if (!result.success) {
+      setError(result.error)
+    }
+    
+    setIsLoading(false)
+  }
+
+  const handleResetPassword = async () => {
+    if (!resetEmail) {
+      setError('Please enter your email address')
+      return
+    }
+
+    setError('')
+    setResetMessage('')
+    setIsLoading(true)
+
+    const result = await onResetPassword(resetEmail)
+    
+    if (result.success) {
+      setResetMessage(result.message)
+      setTimeout(() => {
+        setShowForgotPassword(false)
+        setResetMessage('')
+        setResetEmail('')
+      }, 3000)
+    } else {
       setError(result.error)
     }
     
@@ -52,7 +81,7 @@ function Login({ onLogin }) {
           {/* Logo & Title Section */}
           <div className="text-center mb-8 animate-fade-in">
             <div className="inline-flex items-center justify-center w-20 h-20 mb-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl shadow-2xl transform hover:scale-110 transition-transform duration-300">
-              <div className="w-19 h-19 text-white">
+              <div className="w-12 h-12 text-white">
                 <BookOpen />
               </div>
             </div>
@@ -64,10 +93,84 @@ function Login({ onLogin }) {
 
           {/* Login Card */}
           <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-8 border border-white/20 shadow-2xl animate-slide-up">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-white mb-2">Welcome back</h2>
-              <p className="text-purple-200/70 text-sm">Sign in to continue your journey</p>
-            </div>
+            {showForgotPassword ? (
+              // Forgot Password Form
+              <>
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-white mb-2">Reset Password</h2>
+                  <p className="text-purple-200/70 text-sm">Enter your email to receive a reset link</p>
+                </div>
+
+                <div className="space-y-5">
+                  <div className="relative">
+                    <label className="block text-sm font-medium text-purple-200 mb-2">
+                      Email Address
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="email"
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleResetPassword()}
+                        placeholder="your.email@example.com"
+                        className="w-full px-4 py-3.5 rounded-xl bg-white/10 border-2 border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-purple-400 focus:bg-white/15 transition-all"
+                        disabled={isLoading}
+                      />
+                    </div>
+                  </div>
+
+                  {resetMessage && (
+                    <div className="p-4 bg-green-500/20 border border-green-500/50 rounded-xl text-green-200 text-sm animate-fade-in backdrop-blur-sm">
+                      <span className="font-semibold">✅ Success:</span> {resetMessage}
+                    </div>
+                  )}
+
+                  {error && (
+                    <div className="p-4 bg-red-500/20 border border-red-500/50 rounded-xl text-red-200 text-sm animate-fade-in backdrop-blur-sm">
+                      <span className="font-semibold">⚠️ Error:</span> {error}
+                    </div>
+                  )}
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleResetPassword}
+                      disabled={isLoading || !resetEmail}
+                      className="flex-1 relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-purple-500 to-pink-500 rounded-xl"></div>
+                      <div className="relative px-6 py-3 font-bold text-white flex items-center justify-center gap-2">
+                        {isLoading ? (
+                          <>
+                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            <span>Sending...</span>
+                          </>
+                        ) : (
+                          <span>Send Reset Link</span>
+                        )}
+                      </div>
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setShowForgotPassword(false)
+                      setError('')
+                      setResetMessage('')
+                      setResetEmail('')
+                    }}
+                    className="w-full text-purple-200 hover:text-white text-sm transition-colors"
+                  >
+                    ← Back to Sign In
+                  </button>
+                </div>
+              </>
+            ) : (
+              // Login Form
+              <>
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-white mb-2">Welcome back</h2>
+                  <p className="text-purple-200/70 text-sm">Sign in to continue your journey</p>
+                </div>
 
             <div className="space-y-5">
               {/* Email Input */}
@@ -122,7 +225,19 @@ function Login({ onLogin }) {
                     <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-gradient-to-r from-purple-500 to-pink-500 animate-pulse"></div>
                   )}
                 </div>
-                <p className="text-xs text-purple-200/50 mt-1.5">Minimum 6 characters</p>
+                <div className="flex items-center justify-between mt-1.5">
+                  <p className="text-xs text-purple-200/50">Minimum 6 characters</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowForgotPassword(true)
+                      setError('')
+                    }}
+                    className="text-xs text-purple-300 hover:text-purple-200 transition-colors"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
               </div>
 
               {/* Error Message */}
@@ -157,6 +272,8 @@ function Login({ onLogin }) {
                 </div>
               </button>
             </div>
+            </>
+          )}
 
             {/* Info Section */}
             <div className="mt-6 p-4 bg-blue-500/10 border border-blue-400/20 rounded-xl backdrop-blur-sm">

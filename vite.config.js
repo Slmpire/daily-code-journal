@@ -78,7 +78,7 @@ export default defineConfig({
     }),
   ],
   
-  base: '/daily-code-journal/', 
+  base: '/', 
   
   build: {
     sourcemap: false,

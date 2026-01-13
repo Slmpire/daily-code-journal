@@ -27,7 +27,7 @@ const Loading = () => (
 )
 
 function App() {
-  const { user, loading, login, logout } = useAuth()
+  const { user, loading, login, logout, resetPassword } = useAuth()
   const [userProfile, setUserProfile] = useState({ name: '', nickname: '' })
   const [showProfileSetup, setShowProfileSetup] = useState(false)
   const [profileLoading, setProfileLoading] = useState(true)
@@ -59,17 +59,16 @@ function App() {
 
   const handleSaveProfile = async (profile) => {
     if (!profile.name || !profile.nickname) {
-      alert('Please fill in both name and nickname')
-      return
+      return false
     }
     try {
       await setDoc(doc(db, 'profiles', user.uid), profile)
       setUserProfile(profile)
       setShowProfileSetup(false)
-      alert('✅ Profile saved!')
+      return true
     } catch (error) {
       console.error('Error saving profile:', error)
-      alert('Failed to save profile. Please try again.')
+      return false
     }
   }
 
@@ -87,7 +86,7 @@ function App() {
   }
 
   if (!user) {
-    return <Login onLogin={login} />
+    return <Login onLogin={login} onResetPassword={resetPassword} />
   }
 
   if (showProfileSetup) {
@@ -105,8 +104,10 @@ function App() {
       <InstallPrompt />
       <Journal
         userId={user.uid}
+        userEmail={user.email}
         userProfile={userProfile}
         onLogout={handleLogout}
+        onSaveProfile={handleSaveProfile}
       />
     </>
   )
