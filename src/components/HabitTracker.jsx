@@ -10,11 +10,21 @@ const X = () => (
   </svg>
 )
 
+// Popular habit emojis
+const EMOJI_OPTIONS = [
+  '💻', '📚', '🏃', '🧘', '🎨', '✍️', '🎵', '🎮', '🍎', '💪',
+  '🧠', '☕', '🌱', '📝', '🎯', '⚡', '🔥', '✨', '🚀', '🎓',
+  '🏋️', '🧑‍💻', '📖', '🎸', '🎹', '🎤', '📷', '🎬', '🖌️', '🧑‍🍳',
+  '🌟', '💡', '🎪', '🏆', '🎁', '🌈', '🦋', '🌺', '🌻', '🌙'
+]
+
 function HabitTracker({ userId }) {
   const [habits, setHabits] = useState([])
   const [habitLogs, setHabitLogs] = useState({})
   const [showAddHabit, setShowAddHabit] = useState(false)
   const [newHabitName, setNewHabitName] = useState('')
+  const [selectedEmoji, setSelectedEmoji] = useState('🎯')
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
 
   useEffect(() => {
     loadHabits()
@@ -51,12 +61,15 @@ function HabitTracker({ userId }) {
     const newHabit = {
       id: Date.now().toString(),
       name: newHabitName.trim(),
+      emoji: selectedEmoji,
       createdAt: new Date().toISOString()
     }
     
     saveHabits([...habits, newHabit])
     setNewHabitName('')
+    setSelectedEmoji('🎯')
     setShowAddHabit(false)
+    setShowEmojiPicker(false)
   }
 
   const deleteHabit = (habitId) => {
@@ -119,7 +132,10 @@ function HabitTracker({ userId }) {
           </div>
         </div>
         <button
-          onClick={() => setShowAddHabit(!showAddHabit)}
+          onClick={() => {
+            setShowAddHabit(!showAddHabit)
+            if (showAddHabit) setShowEmojiPicker(false)
+          }}
           className={`p-2 sm:p-2.5 rounded-xl transition-all ${
             showAddHabit 
               ? 'bg-red-500/20 hover:bg-red-500/30 border border-red-400/30' 
@@ -138,6 +154,48 @@ function HabitTracker({ userId }) {
       {showAddHabit && (
         <div className="mb-4 sm:mb-6 p-4 bg-white/5 rounded-xl border border-white/10 animate-slide-down">
           <label className="text-white font-medium mb-2 block text-sm sm:text-base">New Habit</label>
+          
+          {/* Emoji Selector */}
+          <div className="mb-3">
+            <label className="text-white/70 text-xs sm:text-sm mb-2 block">Choose an emoji</label>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                className="w-12 h-12 sm:w-14 sm:h-14 bg-white/20 hover:bg-white/30 rounded-xl flex items-center justify-center text-2xl sm:text-3xl transition-all border-2 border-white/30 hover:border-purple-400"
+              >
+                {selectedEmoji}
+              </button>
+              <div className="text-white/50 text-xs sm:text-sm">
+                Click to pick emoji
+              </div>
+            </div>
+            
+            {/* Emoji Picker Grid */}
+            {showEmojiPicker && (
+              <div className="mt-3 p-3 bg-white/10 rounded-xl border border-white/20 max-h-48 overflow-y-auto animate-slide-down">
+                <div className="grid grid-cols-8 sm:grid-cols-10 gap-1 sm:gap-2">
+                  {EMOJI_OPTIONS.map((emoji, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => {
+                        setSelectedEmoji(emoji)
+                        setShowEmojiPicker(false)
+                      }}
+                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center text-xl sm:text-2xl transition-all hover:bg-white/20 ${
+                        selectedEmoji === emoji ? 'bg-purple-500/40 ring-2 ring-purple-400' : 'bg-white/5'
+                      }`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Habit Name Input */}
           <div className="flex gap-2">
             <input
               type="text"
@@ -146,7 +204,6 @@ function HabitTracker({ userId }) {
               onKeyDown={(e) => e.key === 'Enter' && addHabit()}
               placeholder="e.g., Code 1hr, Read docs, Exercise"
               className="flex-1 min-w-0 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-white/20 border border-white/30 text-white text-sm sm:text-base placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400"
-              autoFocus
             />
             <button
               onClick={addHabit}
@@ -188,23 +245,26 @@ function HabitTracker({ userId }) {
                     onChange={() => toggleHabit(habit.id, today)}
                     className="mt-0.5 w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-white/20 border-2 border-white/30 text-green-500 focus:ring-2 focus:ring-green-400 cursor-pointer hover:border-green-400 transition-all flex-shrink-0"
                   />
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-white font-semibold text-sm sm:text-base transition-all ${
-                      completedToday ? 'line-through text-white/60' : ''
-                    }`}>
-                      {habit.name}
-                    </p>
-                    <div className="flex items-center gap-3 mt-1 flex-wrap">
-                      {streak > 0 ? (
-                        <span className="text-xs sm:text-sm text-orange-300 font-medium flex items-center gap-1">
-                          🔥 {streak} day{streak !== 1 ? 's' : ''}
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <span className="text-2xl sm:text-3xl flex-shrink-0">{habit.emoji || '🎯'}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-white font-semibold text-sm sm:text-base transition-all ${
+                        completedToday ? 'line-through text-white/60' : ''
+                      }`}>
+                        {habit.name}
+                      </p>
+                      <div className="flex items-center gap-3 mt-1 flex-wrap">
+                        {streak > 0 ? (
+                          <span className="text-xs sm:text-sm text-orange-300 font-medium flex items-center gap-1">
+                            🔥 {streak} day{streak !== 1 ? 's' : ''}
+                          </span>
+                        ) : (
+                          <span className="text-xs sm:text-sm text-white/40">⭕ Start your streak!</span>
+                        )}
+                        <span className="text-xs sm:text-sm text-purple-300">
+                          {completedCount}/7 this week
                         </span>
-                      ) : (
-                        <span className="text-xs sm:text-sm text-white/40">⭕ Start your streak!</span>
-                      )}
-                      <span className="text-xs sm:text-sm text-purple-300">
-                        {completedCount}/7 this week
-                      </span>
+                      </div>
                     </div>
                   </div>
                   <button
@@ -266,12 +326,12 @@ function HabitTracker({ userId }) {
         <div className="flex items-start gap-2">
           <span className="text-base sm:text-lg flex-shrink-0">💡</span>
           <p className="text-blue-100 text-xs sm:text-sm">
-            <strong>Tip:</strong> Click the bars to toggle past days. Build streaks by checking off habits daily!
+            <strong>Tip:</strong> Pick an emoji that represents your habit! Click the bars to toggle past days and build streaks.
           </p>
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes slide-down {
           from {
             opacity: 0;
